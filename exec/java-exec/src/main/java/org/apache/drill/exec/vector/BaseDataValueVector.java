@@ -19,6 +19,7 @@ package org.apache.drill.exec.vector;
 
 import io.netty.buffer.DrillBuf;
 import org.apache.drill.exec.memory.BufferAllocator;
+import org.apache.drill.exec.memory.OutOfMemoryRuntimeException;
 import org.apache.drill.exec.record.MaterializedField;
 
 
@@ -28,9 +29,28 @@ public abstract class BaseDataValueVector extends BaseValueVector {
 
   protected DrillBuf data;
 
+  /**
+   * this is used only when asserts are enabled
+   * it enforces the vector contract is respected
+   **/
+  protected VectorStateMachine state;
+
+  protected boolean initState() {
+    state = new VectorStateMachine();
+    return true;
+  }
+
   public BaseDataValueVector(MaterializedField field, BufferAllocator allocator) {
     super(field, allocator);
+    assert initState();
     data = allocator.getEmpty();
+  }
+
+  @Override
+  public void allocateNew() {
+    if(!allocateNewSafe()){
+      throw new OutOfMemoryRuntimeException("Failure while allocating buffer.");
+    }
   }
 
   @Override

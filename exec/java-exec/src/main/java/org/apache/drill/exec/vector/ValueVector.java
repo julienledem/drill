@@ -48,7 +48,7 @@ public interface ValueVector extends Closeable, Iterable<ValueVector> {
 
   /**
    * Allocates new buffers. ValueVector implements logic to determine how much to allocate.
-   * @return Returns true if allocation was succesful.
+   * @return Returns true if allocation was successful.
    */
   boolean allocateNewSafe();
 
@@ -66,6 +66,7 @@ public interface ValueVector extends Closeable, Iterable<ValueVector> {
   /**
    * Alternative to clear(). Allows use as closeable in try-with-resources.
    */
+  @Override
   void close();
 
   /**
@@ -168,7 +169,7 @@ public interface ValueVector extends Closeable, Iterable<ValueVector> {
   }
 
   /**
-   * An abstractiong that is used to write into this vector instance.
+   * An abstraction that is used to write into this vector instance.
    */
   interface Mutator {
     /**
