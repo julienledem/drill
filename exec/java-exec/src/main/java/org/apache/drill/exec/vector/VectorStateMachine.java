@@ -406,9 +406,9 @@ public class VectorStateMachine {
       return new Initial();
     }
 
-    @Override
+    @Override // TODO: remove?
     VectorState splitAndTransfer(int startIndex, int length) {
-      return checkRead(startIndex + length, maxIndex, new Initial());
+      return checkRead(startIndex + length, maxIndex, this); // TODO: check target state
     }
 
     @Override
