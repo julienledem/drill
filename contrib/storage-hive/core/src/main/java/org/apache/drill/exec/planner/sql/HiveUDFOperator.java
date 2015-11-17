@@ -89,5 +89,11 @@ public class HiveUDFOperator extends SqlFunction {
     public String getAllowedSignatures(SqlOperator op, String opName) {
       return opName + "(HiveUDF - Opaque)";
     }
+
+
+    @Override
+    public boolean isOptional(int i) {
+      return false;
+    }
   }
 }
