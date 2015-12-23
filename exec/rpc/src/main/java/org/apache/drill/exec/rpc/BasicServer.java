@@ -17,7 +17,6 @@
  */
 package org.apache.drill.exec.rpc;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -31,14 +30,11 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 
 import java.io.IOException;
 import java.net.BindException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.exec.memory.BufferAllocator;
 import org.apache.drill.exec.proto.GeneralRPCProtos.RpcMode;
 
-import com.google.common.base.Stopwatch;
 import com.google.protobuf.Internal.EnumLite;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
@@ -88,11 +84,11 @@ public abstract class BasicServer<T extends EnumLite, C extends RemoteConnection
 
             if (rpcMapping.hasTimeout()) {
               pipe.addLast(TIMEOUT_HANDLER,
-                  new LogggingReadTimeoutHandler(connection, rpcMapping.getTimeout()));
+                  new LogggingReadTimeoutHandler<>(connection, rpcMapping.getTimeout()));
             }
 
             pipe.addLast("message-handler", new InboundHandler(connection));
-            pipe.addLast("exception-handler", new RpcExceptionHandler(connection));
+            pipe.addLast("exception-handler", new RpcExceptionHandler<>(connection));
 
             connect = true;
 //            logger.debug("Server connection initialization completed.");
@@ -104,11 +100,11 @@ public abstract class BasicServer<T extends EnumLite, C extends RemoteConnection
 //     }
   }
 
-  private class LogggingReadTimeoutHandler<C extends RemoteConnection> extends ReadTimeoutHandler {
+  private class LogggingReadTimeoutHandler<RC extends RemoteConnection> extends ReadTimeoutHandler {
 
-    private final C connection;
+    private final RC connection;
     private final int timeoutSeconds;
-    public LogggingReadTimeoutHandler(C connection, int timeoutSeconds) {
+    public LogggingReadTimeoutHandler(RC connection, int timeoutSeconds) {
       super(timeoutSeconds);
       this.connection = connection;
       this.timeoutSeconds = timeoutSeconds;
@@ -216,22 +212,7 @@ public abstract class BasicServer<T extends EnumLite, C extends RemoteConnection
 
   @Override
   public void close() throws IOException {
-    try {
-      Stopwatch watch = new Stopwatch().start();
-      // this takes 1s to complete
-      // known issue: https://github.com/netty/netty/issues/2545
-      eventLoopGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).get();
-      long elapsed = watch.elapsed(MILLISECONDS);
-      if (elapsed > 500) {
-        logger.info("closed eventLoopGroup " + eventLoopGroup + " in " + elapsed + " ms");
-      }
-    } catch (final InterruptedException | ExecutionException e) {
-      logger.warn("Failure while shutting down {}. ", this.getClass().getName(), e);
-
-      // Preserve evidence that the interruption occurred so that code higher up on the call stack can learn of the
-      // interruption and respond to it if it wants to.
-      Thread.currentThread().interrupt();
-    }
+    EventLoopGroupCloser.eventuallyClose(eventLoopGroup);
   }
 
 }
